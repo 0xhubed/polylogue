@@ -1,0 +1,425 @@
+{
+  "suite": "math",
+  "tasks": [
+    {
+      "id": "math-gen-001",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "fb1c35ea98c999f19f02bc1717efa8c8d94a75426dc250ace3e7fbb585190194",
+      "task_sha256": "e3bf11352f5d6bd73a436345b46c8ce338c00fa0f61e4e55cd29eaf6972a1298",
+      "info": {
+        "generated": true,
+        "kind": "prime_sum",
+        "seed": 1
+      }
+    },
+    {
+      "id": "math-gen-002",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "aef438e5fa045417f1c112517f33d57187b413ed8699cde200da2a50b78c5422",
+      "task_sha256": "2fb5edfabd130b5801490d743ae3dedfc35e7abb402c7c7b32214a60ea60cf6c",
+      "info": {
+        "generated": true,
+        "kind": "squarefree_count",
+        "seed": 2
+      }
+    },
+    {
+      "id": "math-gen-003",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "0f78fb963add9ef76a381cf224ee9e139a9b7b83e44015ad2fa406ba40f3a83c",
+      "task_sha256": "22cd48511a5d74b3303ef4c1edf6ba3d7eb4eaa58f1ae3bb6b45f3377faaebb9",
+      "info": {
+        "generated": true,
+        "kind": "coprime_pairs",
+        "seed": 3
+      }
+    },
+    {
+      "id": "math-gen-004",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "81a3c575f568dc2cdfd20be851af5a0a373760318a3d0e6fed2b83e8a3760096",
+      "task_sha256": "a6f16f850682fdfe27364e8584b81c6ce67745e5b91ad92d3c00aafddf098d46",
+      "info": {
+        "generated": true,
+        "kind": "circle_points",
+        "seed": 4
+      }
+    },
+    {
+      "id": "math-gen-005",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "8d0f754695a0825e355c5fe990894e08109ca0276197207bb97530e9b55365d0",
+      "task_sha256": "bbf5e9838a7a53a6d853260f7a52917c7b80f7222bd36bd4151bb7a3ac7cc987",
+      "info": {
+        "generated": true,
+        "kind": "coprime_count",
+        "seed": 5
+      }
+    },
+    {
+      "id": "math-gen-006",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "aa19ccc898d9016d40a87ff4cedfbab7dbf759deaafdeaef4e90aab5c5a775da",
+      "task_sha256": "8e6d3b464612cb215abb139f8d53ddb16bba86f6654d4cdaeb4a148ca514559c",
+      "info": {
+        "generated": true,
+        "kind": "totient_sum",
+        "seed": 6
+      }
+    },
+    {
+      "id": "math-gen-007",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "9917f5973146b235d9d906f1674a63bd72f01a0dff3552fc8f2eb9ea687c19c2",
+      "task_sha256": "ffd237b4aa25d416388415e81284595abb91e3aa30f23a7b2600ac7c55d68d3d",
+      "info": {
+        "generated": true,
+        "kind": "prime_sum",
+        "seed": 7
+      }
+    },
+    {
+      "id": "math-gen-008",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "3e9f6090a299be5790013ff0875d32c4b703507d546fef3fa4d481b64830bdee",
+      "task_sha256": "a145ffac29eafa73be9414cc496ed8a2a4fe5e1b7351c6ff1965d2eba49023e7",
+      "info": {
+        "generated": true,
+        "kind": "squarefree_count",
+        "seed": 8
+      }
+    },
+    {
+      "id": "math-gen-009",
+      "split": "pilot",
+      "match": "numeric",
+      "answer_sha256": "db520c1997c4eb7e055b68d76270f415121f6c7c045c8b414ad4927532be841f",
+      "task_sha256": "58556b00863e826c01c011053031f44ee822d47037895b019333ce3560cad224",
+      "info": {
+        "generated": true,
+        "kind": "coprime_pairs",
+        "seed": 9
+      }
+    },
+    {
+      "id": "math-gen-010",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "be9d091365e22ff589c1b7e86ff9b21f8695ba9b8b6453381a10b067f957f479",
+      "task_sha256": "cddbadf4ba40f7bdfdf27d9cf381a51a17971a6699e159415ac408cb9532fbb2",
+      "info": {
+        "generated": true,
+        "kind": "circle_points",
+        "seed": 10
+      }
+    },
+    {
+      "id": "math-gen-011",
+      "split": "pilot",
+      "match": "numeric",
+      "answer_sha256": "f7e031889ecf0a5649d64061ccc24ddc5052ee1566deb86994dcdd04437c1228",
+      "task_sha256": "cf0f85041519b39474888191d47e1e8b6de86f47e8b3eec358873fe4f506a47b",
+      "info": {
+        "generated": true,
+        "kind": "coprime_count",
+        "seed": 11
+      }
+    },
+    {
+      "id": "math-gen-012",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "594caec2e70d5992ccf6b6f0b9ce0f944fab4362354fdb8155bf0b87433fc53b",
+      "task_sha256": "b0f534cac2856c6f980295f03f986a961f2137ceb3d68d72f31db06b02232de2",
+      "info": {
+        "generated": true,
+        "kind": "totient_sum",
+        "seed": 12
+      }
+    },
+    {
+      "id": "math-gen-013",
+      "split": "pilot",
+      "match": "numeric",
+      "answer_sha256": "477235cbe9b0b64f3405fdb70ed2811f15d18c10c153e489cf79f73790a021f3",
+      "task_sha256": "0d8e27c04dbbd5c556db8e4238eb215bf329ea6147a22d1e5e89947967c0933a",
+      "info": {
+        "generated": true,
+        "kind": "prime_sum",
+        "seed": 13
+      }
+    },
+    {
+      "id": "math-gen-014",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "4667fd83dc08445f4c9a9dcca22bc4bebb779c452ceb4c1114e53561a5b0d6cd",
+      "task_sha256": "60f9e098ea31a0ca959c46c90961981cda073e8cecf3848c581fa3405178aefb",
+      "info": {
+        "generated": true,
+        "kind": "squarefree_count",
+        "seed": 14
+      }
+    },
+    {
+      "id": "math-gen-015",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "ba0eb586a1fa1ea429e2f46930edbecb7eeb669b9af4db46365d3e545db73c28",
+      "task_sha256": "73609e394fbd8b05f2d1341b10da4c5e14a5d27a47c7c5e1451a7c10103c9caa",
+      "info": {
+        "generated": true,
+        "kind": "coprime_pairs",
+        "seed": 15
+      }
+    },
+    {
+      "id": "math-gen-016",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "fc2e0823ca403b63ff319e57a750b98042c5a3435f82c84d8031509c9362f2d7",
+      "task_sha256": "7fe0f55f7f0f3f0efd8dd6611e2b304368f4e1fa986ede22c8178707fb0d71cb",
+      "info": {
+        "generated": true,
+        "kind": "circle_points",
+        "seed": 16
+      }
+    },
+    {
+      "id": "math-gen-017",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "172d0d13a2b71972b6d3bae7de0d83bedce03ef1fd94217ae2bb4b78290ce9da",
+      "task_sha256": "775e656d8dd8cb5c41bc09233f7e70d08b5e8058961da96dd8a3b1d9c7bfe0a7",
+      "info": {
+        "generated": true,
+        "kind": "coprime_count",
+        "seed": 17
+      }
+    },
+    {
+      "id": "math-gen-018",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "c12f124d78f12eb1e7202bd6564aae7e2b013ebe5f456887c814b9cb98a54af9",
+      "task_sha256": "e4d856fe73b0568ca165ac355692ebc6555b8ee3e689ec3284c722b1c2112ce5",
+      "info": {
+        "generated": true,
+        "kind": "totient_sum",
+        "seed": 18
+      }
+    },
+    {
+      "id": "math-gen-019",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "963901b744350bf6d180e29f882cc16ee18f97c1aa8f72317617031c3e6a4964",
+      "task_sha256": "131e68ca9d78c982d1214fc2d04d576123a1d7092bca4c6d90c65e2f29d8fe96",
+      "info": {
+        "generated": true,
+        "kind": "prime_sum",
+        "seed": 19
+      }
+    },
+    {
+      "id": "math-gen-020",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "457d15f4250cb47814867a3f347346065db5918b81e3f06e94d502762566a9b9",
+      "task_sha256": "1eb39d37041b3fb4a338068f3fc4eb2564445dc0d11fff04395b2db9811da357",
+      "info": {
+        "generated": true,
+        "kind": "squarefree_count",
+        "seed": 20
+      }
+    },
+    {
+      "id": "math-gen-021",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "72031fd0d55d1c32b3da93680f36c7eeb1ba6d09bf37c3cae94cb2a383315d83",
+      "task_sha256": "c0e718591c77d32b0ab8c9b0b50e5287efbf88cc76c4f1913d28159b87c1150a",
+      "info": {
+        "generated": true,
+        "kind": "coprime_pairs",
+        "seed": 21
+      }
+    },
+    {
+      "id": "math-gen-022",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "c97e97b56dd75c35febaaa09d0cb19e7c887f350cdab0037a8d282c7f27ebf6e",
+      "task_sha256": "d88151dd8750324d98cbb37d9ff92b08fe3add9e417c2f08b07e9e495765eb02",
+      "info": {
+        "generated": true,
+        "kind": "circle_points",
+        "seed": 22
+      }
+    },
+    {
+      "id": "math-gen-023",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "d2db51d6b4c5893d4e8066227573c6f698402779d693d94b25a8f0c1034a845e",
+      "task_sha256": "58be9bb0a9ff05e3e301330e795e5a026d241f073014b265c8e51e5588e310c6",
+      "info": {
+        "generated": true,
+        "kind": "coprime_count",
+        "seed": 23
+      }
+    },
+    {
+      "id": "math-gen-024",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "7e649bfc8d9bf1c597140b925b612706817aca73c05c5f5cf8c92274fc4d7772",
+      "task_sha256": "e735c36f77d59d0ad83ecef2a4a3155d0d72b13feaaf57cc37d003286b92f045",
+      "info": {
+        "generated": true,
+        "kind": "totient_sum",
+        "seed": 24
+      }
+    },
+    {
+      "id": "math-gen-025",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "a1e0e3fed69b911e961e37e1be0f4c9a3a4a413fd792d69916602b5bfb1021d9",
+      "task_sha256": "d385210908f6e258f4ae343c042e472b871ab07f41148483f37283abbf111318",
+      "info": {
+        "generated": true,
+        "kind": "prime_sum",
+        "seed": 25
+      }
+    },
+    {
+      "id": "math-gen-026",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "d58f36d03f8bfefb7d6d3a33f27ba3db3b2c50386ca4960d64a26182e8ce7a4a",
+      "task_sha256": "3ccae2996bb36de916734341c0898dcbe9348a8efd174f7994e6a85b16f873e3",
+      "info": {
+        "generated": true,
+        "kind": "squarefree_count",
+        "seed": 26
+      }
+    },
+    {
+      "id": "math-gen-027",
+      "split": "pilot",
+      "match": "numeric",
+      "answer_sha256": "73fe33f48e7b9a44f85e2aac13dbe1b3be9450228537548413ec25e9947692c3",
+      "task_sha256": "f23aef994e341bbc837da1fd3602b34312d1508a163aa6c9a10c73a684d53fbc",
+      "info": {
+        "generated": true,
+        "kind": "coprime_pairs",
+        "seed": 27
+      }
+    },
+    {
+      "id": "math-gen-028",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "26193a7cfb84b05808d91d5f0eddd883c3054266d66d61dffa661a107d17ba13",
+      "task_sha256": "16aa62efaf1d9c049f6dcc6cb0b9ef35327e3600a8bb1a6d13fb12f4d60ec533",
+      "info": {
+        "generated": true,
+        "kind": "circle_points",
+        "seed": 28
+      }
+    },
+    {
+      "id": "math-gen-029",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "99f737a7bd1ec1c29f1cbf320a18fa70e76d15f8dec0732b4b33e6aa257cfc0a",
+      "task_sha256": "2d911add6b981d72e4e8a6455cde9d06b21991e2636bb69cee3d7096f6f579a1",
+      "info": {
+        "generated": true,
+        "kind": "coprime_count",
+        "seed": 29
+      }
+    },
+    {
+      "id": "math-gen-030",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "ce3a59f279d49ca6dcf9a1949240147b2d256da773681c9ebb5ae460e4cb3e68",
+      "task_sha256": "287a85b5a37c94e558215b5647569c35492b8c82ce8479c93d9d99da08b43194",
+      "info": {
+        "generated": true,
+        "kind": "totient_sum",
+        "seed": 30
+      }
+    },
+    {
+      "id": "math-gen-031",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "4cc0f8f80435a38d85430f2fa806da13b81139d6b08b59898b86497fe9c6afc9",
+      "task_sha256": "4a7b8e9d73a2349789d507c0bf6f35aaa0bbbcc7fbc94c3ede225c9bd819cc7c",
+      "info": {
+        "generated": true,
+        "kind": "prime_sum",
+        "seed": 31
+      }
+    },
+    {
+      "id": "math-gen-032",
+      "split": "pilot",
+      "match": "numeric",
+      "answer_sha256": "9955d97612f985dc24caf6be7925b5bfe539a8a0b22a9ee81a072ecb84da73b3",
+      "task_sha256": "fbe5f3905017f18dc00529dbf8f1841c316bb5e1b88acc771ea23c6eacd9e0df",
+      "info": {
+        "generated": true,
+        "kind": "squarefree_count",
+        "seed": 32
+      }
+    },
+    {
+      "id": "math-gen-033",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "8678087bf9398ea99fd26abb53dd95551c07cc0ae78b2615d4ca577b58f7de72",
+      "task_sha256": "6185c39b3f5a1078a2d724921954deb95a625477e1c5957a8f1f21c4a16bce19",
+      "info": {
+        "generated": true,
+        "kind": "coprime_pairs",
+        "seed": 33
+      }
+    },
+    {
+      "id": "math-gen-034",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "79b536cc5931a96160562d6d23ef327fc98e2165ac0e605e3222fbcbcde32443",
+      "task_sha256": "dea4b214375c5b3d8accd068cfbc1ad7567bd567937c31564235f1df79c0c212",
+      "info": {
+        "generated": true,
+        "kind": "circle_points",
+        "seed": 34
+      }
+    },
+    {
+      "id": "math-gen-035",
+      "split": "scored",
+      "match": "numeric",
+      "answer_sha256": "6263357af18d78c97f972c4b5a0b96a362fc55e15b6c8e9847f84c74e1fae396",
+      "task_sha256": "75f8e962a50f20fb6ffae3f115b7f4b0a1acbe59501498d9c7c6eace7dd9c4c0",
+      "info": {
+        "generated": true,
+        "kind": "coprime_count",
+        "seed": 35
+      }
+    }
+  ]
+}

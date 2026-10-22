@@ -1,0 +1,21 @@
+{
+  "condition": "polylogue",
+  "taskId": "toy-vault",
+  "seed": 1,
+  "budget": { "tokensPerAgent": 60000 },
+  "wallClockMs": 600000,
+  "rate": { "messagesPerMinute": 10, "maxMessageChars": 2000 },
+  "toolDelayMs": 500,
+  "checkServer": true,
+  "model": {
+    "baseUrl": "http://zgx-40dd.local:8000/v1",
+    "id": "qwen3.8-27b",
+    "hfRepo": "unsloth/Qwen3.8-27B-NVFP4",
+    "revision": "7d6f8d4d72f56b92b3cdbf22f156b90e1bab0108",
+    "contextWindow": 262144,
+    "maxTokens": 32768,
+    "reasoningEffort": "medium",
+    "timeoutMs": 1800000,
+    "maxRetries": 3
+  }
+}

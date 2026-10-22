@@ -1,0 +1,7 @@
+{
+  "_comment": "Sampling for every model call (runs and the oracle screen): Qwen3.8's recommended thinking-mode settings. Greedy decoding made seeds meaningless and looped (pilot P0, 2026-10-12). Read by packages/runtime/src/model/provider.ts and prep/polyprep/model.py.",
+  "temperature": 0.6,
+  "top_p": 0.95,
+  "top_k": 20,
+  "min_p": 0
+}

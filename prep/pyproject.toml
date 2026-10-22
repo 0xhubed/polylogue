@@ -1,0 +1,15 @@
+[project]
+name = "polyprep"
+version = "0.0.0"
+requires-python = ">=3.12"
+dependencies = ["datasets==5.1.0", "huggingface_hub==2.2.0", "numpy==2.5.4", "tokenizers==0.23.3"]
+
+[dependency-groups]
+dev = ["pytest==9.1.1"]
+
+[build-system]
+requires = ["hatchling==1.32.4"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["polyprep"]
