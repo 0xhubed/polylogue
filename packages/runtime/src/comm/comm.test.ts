@@ -3,7 +3,7 @@ import type { AgentTool } from "@earendil-works/pi-agent-core";
 import type { EventInput, InboxMessage } from "@polylogue/schema";
 import { Bus, type BusMember } from "./bus.ts";
 import { Blackboard } from "./blackboard.ts";
-import { CONDITIONS, NORMS, systemPrompt, toolNames } from "../conditions.ts";
+import { CONDITIONS, NORMS, PHASE1_CONDITIONS, rootPromptAfterFork, systemPrompt, toolNames } from "../conditions.ts";
 import { buildTools } from "../tools/build-tools.ts";
 import { Controller } from "../control/controller.ts";
 import { FakeClock } from "../clock.ts";
@@ -113,6 +113,90 @@ describe("conditions", () => {
     const { ctx } = world();
     const tools = buildTools(CONDITIONS.polylogue, "a1", ctx, [readShardTool(VAULT, 0)]);
     expect(tools.map((t) => t.name)).toEqual(toolNames(CONDITIONS.polylogue, ["read_shard"]));
+  });
+});
+
+describe("fork conditions", () => {
+  const ids = ["a1", "a2", "a3", "a4"];
+  const rule = "The first claim by any agent is the team's answer and ends the run for everyone.";
+
+  it("defines fork and fork-silent: 4 agents, no blackboard, no norms, the first claim ends the run", () => {
+    expect(CONDITIONS.fork).toEqual({ name: "fork", n: 4, blackboard: false, messaging: true, norms: false, firstClaimEnds: true, fork: true });
+    expect(CONDITIONS["fork-silent"]).toEqual({ ...CONDITIONS.fork, name: "fork-silent", messaging: false });
+    expect(PHASE1_CONDITIONS).toEqual(["single", "isolated", "stigmergic", "polylogue", "polylogue-bare"]);
+    for (const name of PHASE1_CONDITIONS) expect(CONDITIONS[name].fork).toBe(false);
+  });
+
+  it("tells the root it works alone first, will be told to fork, and may claim only after the split", () => {
+    for (const c of [CONDITIONS.fork, CONDITIONS["fork-silent"]]) {
+      const p = systemPrompt(c, "a1", ids);
+      expect(p).toContain("You are agent a1.");
+      expect(p).toContain("fork");
+      expect(p).toMatch(/claim.*after the split/i);
+      expect(p).not.toContain("call claim");
+      expect(p).not.toContain(rule);
+      expect(p).not.toContain("blackboard");
+    }
+  });
+
+  it("names the copy and its siblings and gives the copy the team claim rule", () => {
+    for (const c of [CONDITIONS.fork, CONDITIONS["fork-silent"]]) {
+      const p = systemPrompt(c, "a3", ids);
+      expect(p).toContain("You are agent a3.");
+      for (const other of ["a1", "a2", "a4"]) expect(p).toContain(other);
+      expect(p).toContain("call claim");
+      expect(p).toContain(rule);
+      expect(p).not.toContain("blackboard");
+    }
+  });
+
+  it("fork copies are told about the messaging tools; fork-silent copies about neither", () => {
+    const talk = systemPrompt(CONDITIONS.fork, "a2", ids);
+    expect(talk).toContain("send");
+    expect(talk).toContain("publish");
+    expect(talk).toContain("roster");
+    const silent = systemPrompt(CONDITIONS["fork-silent"], "a2", ids);
+    expect(silent).not.toContain("send");
+    expect(silent).toContain("cannot contact");
+  });
+
+  it("gives the root after the fork the same messaging and claim rules as its copies", () => {
+    const talk = rootPromptAfterFork(CONDITIONS.fork, ids);
+    expect(talk).toContain("You are agent a1.");
+    for (const id of ["a2", "a3", "a4"]) expect(talk).toContain(id);
+    expect(talk).toContain("send");
+    expect(talk).toContain("call claim");
+    expect(talk).toContain(rule);
+    expect(talk).not.toContain("blackboard");
+    const silent = rootPromptAfterFork(CONDITIONS["fork-silent"], ids);
+    expect(silent).not.toContain("send");
+    expect(silent).toContain("cannot contact");
+    expect(silent).toContain(rule);
+  });
+
+  it("does not say the copies work on a direction the root gave them (the fork may be the runtime's fallback)", () => {
+    const talk = rootPromptAfterFork(CONDITIONS.fork, ids);
+    expect(talk).toContain("each working on its own direction");
+    expect(talk).toContain("You continue as the fourth agent.");
+    expect(talk).not.toContain("you gave it");
+  });
+
+  it("keeps the phase-1 toolNames as they were", () => {
+    expect(toolNames(CONDITIONS.polylogue, ["read_shard"])).toEqual(["read_shard", "claim", "read_blackboard", "append_blackboard", "send", "publish", "subscribe", "roster"]);
+  });
+});
+
+describe("phase-1 prompts are unchanged", () => {
+  // Captured from systemPrompt before the fork conditions were added (agent a2 of a1-a4).
+  const BEFORE: Record<string, string> = {
+  "single": "You are agent a2. You work alone on the task below. Ending your turn without a tool call ends your work. When you know the answer, call claim with the answer and your evidence. You can claim only once, claiming ends your work, and you will not be told whether the answer was correct.",
+    "isolated": "You are agent a2. 4 agents work on the task below independently. You cannot contact the others. Ending your turn without a tool call ends your work. When you know the answer, call claim with the answer and your evidence. You can claim only once, claiming ends your work, and you will not be told whether the answer was correct.",
+    "stigmergic": "You are agent a2. You are one of 4 agents working on the task below; the others are a1, a3, a4. You share a blackboard: read_blackboard shows every entry, append_blackboard adds one. There is no other way to reach the others. Ending your turn without a tool call ends your work. When you know the answer, call claim with the answer and your evidence. You can claim only once, claiming ends your work, and you will not be told whether the answer was correct. The first claim by any agent is the team's answer and ends the run for everyone.",
+    "polylogue": "You are agent a2. You are one of 4 agents working on the task below; the others are a1, a3, a4. Use send to message one agent and publish to message a topic (every agent hears #all; subscribe to hear other topics); roster shows the team and what each agent is doing, and the blackboard (read_blackboard, append_blackboard) keeps shared notes. Messages from others arrive between your steps. If you have nothing to do, end your turn without a tool call; a new message will wake you. When you know the answer, call claim with the answer and your evidence. You can claim only once, claiming ends your work, and you will not be told whether the answer was correct. The first claim by any agent is the team's answer and ends the run for everyone.\n\nTeam norms:\n1. Start by publishing a one-line plan on #all (what you will do), then check roster and read_blackboard before you start work.\n2. Every claim you share comes with evidence: a quote, a tool result or a derivation.\n3. Ask instead of guessing. If nobody answers before you need it, state your assumption and continue.\n4. Share conclusions, not reasoning traces (\"X ruled out because Y\").",
+    "polylogue-bare": "You are agent a2. You are one of 4 agents working on the task below; the others are a1, a3, a4. Use send to message one agent and publish to message a topic (every agent hears #all; subscribe to hear other topics); roster shows the team and what each agent is doing, and the blackboard (read_blackboard, append_blackboard) keeps shared notes. Messages from others arrive between your steps. If you have nothing to do, end your turn without a tool call; a new message will wake you. When you know the answer, call claim with the answer and your evidence. You can claim only once, claiming ends your work, and you will not be told whether the answer was correct. The first claim by any agent is the team's answer and ends the run for everyone.",
+  };
+  it.each(Object.keys(BEFORE))("%s", (name) => {
+    expect(systemPrompt(CONDITIONS[name as keyof typeof CONDITIONS], "a2", ["a1", "a2", "a3", "a4"])).toBe(BEFORE[name]);
   });
 });
 

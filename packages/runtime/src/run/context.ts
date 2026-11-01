@@ -17,4 +17,8 @@ export interface RunContext {
   bus: Bus;
   board: Blackboard;
   dir: AgentDirectory;
+  /** Splits `parent` into copies, one per direction; returns the child ids. Absent in runs without the fork mechanism. */
+  fork?(parent: string, directions: string[], o: { fallback: boolean }): string[];
+  /** True once the fork has happened. */
+  forked?(): boolean;
 }

@@ -34,7 +34,7 @@ export function Swimlanes({ s }: { s: ViewState }) {
       </div>
       <p className="legend">
         <span className="key model" /> model call <span className="key tool" /> tool <span className="key idle" /> idle
-        <span className="key-line sent" /> sent <span className="key-line received" /> received <span className="key-line blackboard" /> blackboard <span className="key-line claim" /> claim
+        <span className="key-line sent" /> sent <span className="key-line received" /> received <span className="key-line blackboard" /> blackboard <span className="key-line claim" /> claim <span className="key-line fork" /> fork
       </p>
     </section>
   );

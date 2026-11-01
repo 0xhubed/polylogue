@@ -50,6 +50,11 @@ export class Controller {
     });
   }
 
+  /** The run's token pool: the hard budget that every model call is charged against. */
+  get pool(): number {
+    return this.cfg.pool;
+  }
+
   register(a: ControlledAgent): void {
     this.agents.push(a);
   }

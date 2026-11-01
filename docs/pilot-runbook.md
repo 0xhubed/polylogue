@@ -120,3 +120,30 @@ git add suites/*/frozen.json configs/pilot-p1.json configs/main.json docs/pilot-
 git commit -m "Freeze: tasks, budgets and limits after the pilot"
 ```
 `frozen.json` records, per task, the answer hash and a fingerprint of match, answer, aliases and prompt (`task_sha256`); for ledger also the hash of the task's corpus file (`corpus_sha256`); for bcp the corpus and queries revisions. It holds no question text and no document ids. `python -m polyprep.freeze <suite> --check` verifies `data/` against the committed manifests at any later time. Once a suite has `frozen.json`, `polylogue batch` refuses to start a `scored` cell whose task differs from it (every run also logs its task fingerprint in `run_started`). D5 (primary suite) must be decided before this commit.
+
+## 8. Phase 2 — fork (GO-AHEAD)
+
+Design: `docs/superpowers/specs/2026-10-22-polylogue-phase2-fork-design.md`. Phase 2 reuses the phase-1 tasks (30 bcp, 30 math scored; the same 10 pilot tasks) and budgets (bcp 80k, math 38k per agent), and compares `fork`, `fork-silent` and `isolated`.
+
+Before the pilot: Daniel reviews the prompt wording, the texts in `packages/runtime/src/fork/texts.ts` and `packages/runtime/src/conditions.ts`. Changing a text after the pilot means rerunning it.
+
+P2 uses its own database (`data/pilot-p2.sqlite`; never reuse another pilot's file) and `configs/pilot-p2.json`: `fork` and `fork-silent`, seeds `[1, 2]`, the two pilot suites, bcp 80,000 and math 38,000 tokens per agent, `wallClockMs` 1800000. That is 2 conditions × 10 tasks × 2 seeds = 40 runs. No `isolated` runs: the pilot checks mechanics only.
+
+```bash
+npm run polylogue -- batch configs/pilot-p2.json --db data/pilot-p2.sqlite
+npm run polylogue -- pilot-report --db data/pilot-p2.sqlite --matrix configs/pilot-p2.json
+```
+
+Go/no-go: read the `## Fork` section of the report, per suite and condition.
+
+- Runs that forked, and runs that ended before the fork. A run that ends before the fork never reaches the manipulation; many of them mean the root solves or stops too early, or the budget runs out first.
+- Fallback forks. The line `Fallback rate above 20%: STOP (spec §4.7)` means more than a fifth of the fork-condition runs needed the runtime's fallback (the model did not make the fork call); stop and fix the prompt or the tool before going on. `Fallback rate: ok` means go on.
+- Distinct directions: the three directions differ after trim and lowercase. Fallback forks count as not distinct, because their three generic directions are identical. This is only a floor: the fork tool already rejects exact duplicates, so the count cannot show whether the directions are genuinely different.
+- **Read the directions** (`### Directions`, under the Fork section; each fork run's three texts, cut at 300 characters, with the run's maximum pairwise word-Jaccard; the table above it gives the median per suite and condition). This is an explicit go/no-go step for Daniel: are the three directions of a run genuinely different, or three rewordings of one idea? Near-identical directions mean the copies will repeat each other; no-go, fix the instruction or the tool description and rerun P2 into a new database. The Jaccard figure only helps to sort (1.00 identical word sets; high values are the runs to read first); it has no threshold.
+- Median tokens used before the fork: how much of the budget the root has spent when it forks, which is what the children inherit. Next to it, "instructed before 10% of the pool" counts the runs where the root was told to fork before a tenth of the pool was charged (a first turn without a tool call triggers the instruction early; this is planned behaviour, now visible). If it is most runs, the root forks before it has done anything worth inheriting.
+- Short inheritance: copies whose first model call has fewer prompt tokens than the root's call that made the fork call. Any entry means the copy did not start from the root's whole history; check those runs before going on.
+- The fallback rate leaves infra_error runs out of its denominator and names their count.
+
+Also check by hand that context inheritance is right (a child's first call starts with the root's context up to the fork) and that no run crashed. Go only if all of these look fine; otherwise fix, and rerun P2 into a new database.
+
+Before the main run: write the pre-registration `preregistrations/08-polylogue-forking.md` in agent-engineering-experiments and commit it. At the freeze, write `configs/phase2.json`, the main matrix: copy `configs/pilot-p2.json` and set name `phase2`, conditions `["fork", "fork-silent", "isolated"]`, seeds `[1, 2]`, both suites with `split: "scored"` and the frozen budgets and limits. That is 3 conditions × 60 tasks × 2 seeds = 360 runs, about 3 days on one Spark.

@@ -4,7 +4,7 @@ export const AgentId = z.string().regex(/^a\d+$/);
 const T = z.number().int().nonnegative();
 const Count = z.number().int().nonnegative();
 
-export const ConditionName = z.enum(["single", "isolated", "stigmergic", "polylogue", "polylogue-bare"]);
+export const ConditionName = z.enum(["single", "isolated", "stigmergic", "polylogue", "polylogue-bare", "fork", "fork-silent"]);
 export type ConditionName = z.infer<typeof ConditionName>;
 
 export const RunEndReason = z.enum(["solved", "wrong_claim", "budget", "killed", "all_idle", "infra_error"]);
@@ -33,6 +33,10 @@ export const Event = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("claim_submitted"), t: T, agent: AgentId, answer: z.string(), evidence: z.string() }),
   z.object({ kind: z.literal("verification"), t: T, claimOf: AgentId, passed: z.boolean(), detail: z.string().optional() }),
   z.object({ kind: z.literal("agent_finished"), t: T, agent: AgentId, reason: AgentEndReason }),
+  /** The root forked into three copies. `call` is the index of the root's model_call that made the fork call (of its last model call for a fallback). */
+  z.object({ kind: z.literal("fork"), t: T, agent: AgentId, call: Count, children: z.array(AgentId).length(3), directions: z.array(z.string()).length(3), fallback: z.boolean() }),
+  /** A user message the runtime inserted into that agent's context (not from another agent). */
+  z.object({ kind: z.literal("runtime_note"), t: T, agent: AgentId, text: z.string() }),
   z.object({ kind: z.literal("run_finished"), t: T, reason: RunEndReason, solved: z.boolean(), wallMs: Count, totalTokens: Count, detail: z.string().optional() }),
 ]);
 export type Event = z.infer<typeof Event>;

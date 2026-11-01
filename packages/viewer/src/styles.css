@@ -30,12 +30,12 @@ h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color
 .seg.model { fill: var(--model); } .seg.tool { fill: var(--tool); } .seg.idle { fill: var(--idle); }
 .mark-halo { stroke: #fff; stroke-width: 6; vector-effect: non-scaling-stroke; }
 .mark { stroke-width: 3; vector-effect: non-scaling-stroke; }
-.mark.sent { stroke: #0f9d84; } .mark.received { stroke: #7c4dff; } .mark.blackboard { stroke: #111; } .mark.claim { stroke: var(--urgent); stroke-width: 4; }
+.mark.sent { stroke: #0f9d84; } .mark.received { stroke: #7c4dff; } .mark.blackboard { stroke: #111; } .mark.claim { stroke: var(--urgent); stroke-width: 4; } .mark.fork { stroke: #c2410c; stroke-width: 4; stroke-dasharray: 4 3; }
 .cursor { stroke: var(--urgent); stroke-width: 2; vector-effect: non-scaling-stroke; }
 .legend { font-size: 0.75rem; color: var(--muted); }
 .key { display: inline-block; width: 10px; height: 10px; margin: 0 4px 0 10px; }
 .key-line { display: inline-block; width: 3px; height: 12px; margin: 0 4px 0 12px; vertical-align: middle; }
-.key-line.sent { background: #0f9d84; } .key-line.received { background: #7c4dff; } .key-line.blackboard { background: #111; } .key-line.claim { background: var(--urgent); }
+.key-line.sent { background: #0f9d84; } .key-line.received { background: #7c4dff; } .key-line.blackboard { background: #111; } .key-line.claim { background: var(--urgent); } .key-line.fork { background: #c2410c; }
 .key.model { background: var(--model); } .key.tool { background: var(--tool); } .key.idle { background: var(--idle); }
 .chat, .board, .runs { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 300px; overflow: auto; }
 .chat li, .board li { font-size: 0.9rem; }

@@ -8,7 +8,10 @@ import { startFakeOpenAI, testModelConfig, type FakeServer, type Policy } from "
 import { Controller } from "../control/controller.ts";
 import { Bus } from "../comm/bus.ts";
 import { Blackboard } from "../comm/blackboard.ts";
-import { CONDITIONS, systemPrompt } from "../conditions.ts";
+import { CONDITIONS, rootPromptAfterFork, systemPrompt } from "../conditions.ts";
+import { GENERIC_DIRECTION, fallbackNotice, forkInstruction } from "../fork/texts.ts";
+import { claimTool } from "../tools/claim-tool.ts";
+import { toAgentTool } from "../tools/work-tool.ts";
 import { buildTools } from "../tools/build-tools.ts";
 import { VAULT, readShardTool } from "../toy/vault.ts";
 import { realClock } from "../clock.ts";
@@ -232,5 +235,191 @@ describe("AgentLoop", () => {
     const { loops, controller } = await team(() => ({ content: "nothing to do" }), "polylogue");
     await Promise.all(loops.map((l) => l.start(VAULT.prompt)));
     expect(await controller.done).toBe("all_idle");
+  });
+});
+
+/** A fork run's root alone, wired like Task 5's run will wire it; ctx.fork is a fake that, like the real one, calls afterFork. */
+async function rootTeam(policy: Policy, opts: { pool?: number; toolDelayMs?: number } = {}) {
+  fake = await startFakeOpenAI(policy);
+  const cond = CONDITIONS["fork-silent"];
+  const ids = ["a1", "a2", "a3", "a4"];
+  const events: Event[] = [];
+  const t0 = Date.now();
+  const log = (e: EventInput) => {
+    events.push({ ...e, t: Date.now() - t0 } as Event);
+  };
+  const pool = opts.pool ?? 1e9;
+  const runtime = makeModelRuntime(testModelConfig(fake.baseUrl, { maxTokens: 100 }));
+  const controller = new Controller({ pool, wallClockMs: 60_000, messagesPerMinute: 30, maxMessageChars: 2000, contextWindow: 262144 }, { log, clock: realClock, verify: VAULT.verify });
+  const bus = new Bus(log);
+  const forkCalls: { parent: string; directions: string[]; fallback: boolean }[] = [];
+  let forked = false;
+  let loop: AgentLoop | undefined;
+  const ctx: RunContext = {
+    log, controller, bus, board: new Blackboard(log),
+    dir: { ids: () => ids, status: () => "", phase: () => "working" },
+    fork: (parent, directions, o) => {
+      forkCalls.push({ parent, directions, fallback: o.fallback });
+      // Logged as the real run logs it, so the root's context can be rebuilt; no copy is made.
+      log({ kind: "fork", agent: parent, call: loop!.callCount - 1, children: ["a2", "a3", "a4"], directions, fallback: o.fallback });
+      forked = true;
+      loop!.afterFork();
+      return ["a2", "a3", "a4"];
+    },
+    forked: () => forked,
+  };
+  const work = [toAgentTool(readShardTool(VAULT, opts.toolDelayMs ?? 0))];
+  const prompt = systemPrompt(cond, "a1", ids);
+  const promptAfterFork = rootPromptAfterFork(cond, ids);
+  log({ kind: "run_started", condition: cond.name, n: cond.n, taskId: VAULT.id, task: VAULT.prompt, pool, wallClockMs: 60_000 });
+  log({ kind: "agent_started", agent: "a1", index: 0, seed: 700, systemPrompt: prompt, tools: work.map((t) => t.name) });
+  loop = new AgentLoop({
+    id: "a1", systemPrompt: prompt, tools: work, runtime, seed: 700, canBeWoken: false, ctx, clock: realClock,
+    root: { tools: { beforeFork: work, afterFork: [...work, claimTool("a1", ctx)] }, promptAfterFork },
+  });
+  bus.add(loop);
+  controller.register(loop);
+  return { events, loop, controller, bus, fake: fake!, forkCalls, prompt, promptAfterFork };
+}
+
+// biome-ignore lint: request bodies are arbitrary JSON
+const toolNamesOf = (r: { body: any }): string[] => (r.body.tools ?? []).map((t: { function: { name: string } }) => t.function.name);
+// biome-ignore lint: request bodies are arbitrary JSON
+const ctxOf = (r: { body: any }) => normalizeOpenAIMessages(r.body.messages);
+// biome-ignore lint: request bodies are arbitrary JSON
+const lastUser = (r: { body: any }) => ctxOf(r).filter((m) => m.role === "user").at(-1)?.text;
+// biome-ignore lint: request bodies are arbitrary JSON
+const told = (r: { body: any }) => {
+  const last = ctxOf(r).at(-1);
+  return last?.role === "user" && last.text === forkInstruction();
+};
+/** Every request the root made is the context rebuilt from the log. */
+const expectRootRebuilt = (events: Event[], f: FakeServer) =>
+  f.requests.forEach((r, call) => expect(contextBeforeCall(events, "a1", call), `a1 call ${call}`).toEqual(ctxOf(r)));
+const notes = (events: Event[]) => events.filter((e) => e.kind === "runtime_note").map((e) => (e as { text: string }).text);
+const DIRECTIONS = ["Check shard 1 first.", "Check shard 2 first.", "Check shard 3 first."];
+
+describe("AgentLoop root (fork)", () => {
+  it("the root has no claim tool before the fork", async () => {
+    const { loop, fake } = await rootTeam((r) => {
+      if (told(r)) return { toolCalls: [{ name: "fork", args: { directions: DIRECTIONS } }] };
+      if (toolNamesOf(r).includes("claim")) return { content: "done" };
+      return { toolCalls: [{ name: "read_shard", args: { shard: 1 } }] };
+    }, { pool: 2_000 });
+    await loop.start(VAULT.prompt);
+    expect(toolNamesOf(fake.requests[0]!)).toEqual(["read_shard"]);
+    expect(toolNamesOf(fake.requests[1]!)).toEqual(["read_shard"]);
+    expect(fake.requests.map(told)).toEqual([false, false, true, false]);
+  });
+
+  it("the fork instruction arrives at the first boundary at or past 10% of the pool, with the fork tool, and the fork swaps tools and prompt", async () => {
+    const { events, loop, fake, forkCalls, prompt, promptAfterFork } = await rootTeam((r) => {
+      if (told(r)) return { toolCalls: [{ name: "fork", args: { directions: DIRECTIONS } }], usage: { in: 600, out: 100 } };
+      if (toolNamesOf(r).includes("claim")) return { content: "done", usage: { in: 600, out: 100 } };
+      return { toolCalls: [{ name: "read_shard", args: { shard: r.call + 1 } }], usage: { in: 600, out: 100 } };
+    }, { pool: 10_000 });
+    await loop.start(VAULT.prompt);
+    const reqs = fake.requests;
+    expect(reqs.map(told)).toEqual([false, false, true, false]);
+    expect(toolNamesOf(reqs[1]!)).toEqual(["read_shard"]);
+    expect(toolNamesOf(reqs[2]!)).toEqual(["read_shard", "fork"]);
+    expect(notes(events)).toEqual([forkInstruction()]);
+    expect(forkCalls).toEqual([{ parent: "a1", directions: DIRECTIONS, fallback: false }]);
+    expect(toolNamesOf(reqs[3]!)).toEqual(["read_shard", "claim"]);
+    expect(ctxOf(reqs[2]!)[0]).toEqual({ role: "system", text: prompt });
+    expect(ctxOf(reqs[3]!).filter((m) => m.role === "system")).toEqual([{ role: "system", text: promptAfterFork }]);
+    expect(loop.messages()[0]).toMatchObject({ role: "system", content: promptAfterFork });
+    expectRootRebuilt(events, fake);
+  });
+
+  it("a root that ends a turn without a tool call before the fork is told to fork", async () => {
+    const { events, loop, fake, forkCalls } = await rootTeam((r) => {
+      if (told(r)) return { toolCalls: [{ name: "fork", args: { directions: DIRECTIONS } }] };
+      if (toolNamesOf(r).includes("claim")) return { content: "done" };
+      return { content: "The code is 1234." };
+    });
+    await loop.start(VAULT.prompt);
+    const reqs = fake.requests;
+    expect(reqs.map(told)).toEqual([false, true, false]);
+    expect(toolNamesOf(reqs[1]!)).toContain("fork");
+    const a1 = kinds(events, "a1");
+    expect(a1.indexOf("runtime_note")).toBeGreaterThan(-1);
+    expect(a1.slice(0, a1.indexOf("runtime_note"))).not.toContain("idle");
+    expect(forkCalls).toHaveLength(1);
+  });
+
+  it("fallback after two calls without a valid fork", async () => {
+    const { events, loop, fake, forkCalls, promptAfterFork } = await rootTeam((r) =>
+      toolNamesOf(r).includes("claim") ? { content: "done" } : { toolCalls: [{ name: "read_shard", args: { shard: 1 } }], usage: { in: 600, out: 100 } }, { pool: 10_000 });
+    await loop.start(VAULT.prompt);
+    const reqs = fake.requests;
+    expect(reqs.map(told)).toEqual([false, false, true, false, false]);
+    expect(forkCalls).toEqual([{ parent: "a1", directions: [GENERIC_DIRECTION, GENERIC_DIRECTION, GENERIC_DIRECTION], fallback: true }]);
+    const notice = fallbackNotice(["a2", "a3", "a4"]);
+    expect(lastUser(reqs[4]!)).toBe(notice);
+    expect(notes(events)).toEqual([forkInstruction(), notice]);
+    expect(toolNamesOf(reqs[4]!)).toEqual(["read_shard", "claim"]);
+    expect(ctxOf(reqs[4]!)[0]).toEqual({ role: "system", text: promptAfterFork });
+    expectRootRebuilt(events, fake);
+  });
+
+  it("a malformed fork counts as one of the two calls", async () => {
+    const { events, loop, fake, forkCalls } = await rootTeam((r) => {
+      if (toolNamesOf(r).includes("claim")) return { content: "done" };
+      if (told(r)) return { toolCalls: [{ name: "fork", args: { directions: ["only one", "two"] } }] };
+      return { toolCalls: [{ name: "read_shard", args: { shard: 1 } }], usage: { in: 600, out: 100 } };
+    }, { pool: 10_000 });
+    await loop.start(VAULT.prompt);
+    expect(fake.requests.map(told)).toEqual([false, false, true, false, false]);
+    expect(events.find((e) => e.kind === "tool_result" && e.tool === "fork")).toMatchObject({ isError: true });
+    expect(forkCalls).toEqual([{ parent: "a1", directions: [GENERIC_DIRECTION, GENERIC_DIRECTION, GENERIC_DIRECTION], fallback: true }]);
+  });
+
+  it("a root that answers the instruction without a tool call is told again, then forked for", async () => {
+    const { events, loop, fake, forkCalls } = await rootTeam((r) => (toolNamesOf(r).includes("claim") ? { content: "done" } : { content: "Still thinking." }));
+    await loop.start(VAULT.prompt);
+    expect(fake.requests.map(told)).toEqual([false, true, true, false]);
+    expect(notes(events)).toEqual([forkInstruction(), forkInstruction(), fallbackNotice(["a2", "a3", "a4"])]);
+    expect(forkCalls).toEqual([expect.objectContaining({ fallback: true })]);
+    expectRootRebuilt(events, fake);
+  });
+
+  it("a loop given initial messages starts from them under its own system prompt", async () => {
+    const { loop, fake } = await rootTeam(() => ({ content: "done" }));
+    const inherited = loop.messages();
+    expect(inherited).toHaveLength(1);
+    const ctx = (loop as unknown as { o: { ctx: RunContext } }).o.ctx;
+    const runtime = makeModelRuntime(testModelConfig(fake.baseUrl, { maxTokens: 100 }));
+    const earlier = [
+      ...inherited,
+      { role: "user", content: "earlier", timestamp: 0 },
+      { role: "assistant", content: [{ type: "text", text: "noted" }], usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, stopReason: "stop", timestamp: 0 },
+    ] as never[];
+    const copy = new AgentLoop({ id: "a2", systemPrompt: "You are a copy.", tools: [], runtime, seed: 701, canBeWoken: false, ctx, clock: realClock, initialMessages: earlier });
+    await copy.start("go on");
+    expect(ctxOf(fake.requests[0]!)).toEqual([
+      { role: "system", text: "You are a copy." },
+      { role: "user", text: "earlier" },
+      { role: "assistant", text: "noted" },
+      { role: "user", text: "go on" },
+    ]);
+  });
+
+  it("runtime notes come before a message block at the same boundary", async () => {
+    const { events, loop, bus, fake } = await rootTeam((r) => {
+      if (r.call > 0) return { content: "done" };
+      return { toolCalls: [{ name: "read_shard", args: { shard: 1 } }], usage: { in: 600, out: 1000 } };
+    }, { pool: 10_000, toolDelayMs: 200 });
+    const run = loop.start(VAULT.prompt);
+    await vi.waitFor(() => expect(events.some((e) => e.kind === "tool_call")).toBe(true));
+    bus.post("a2", "a1", "hello root", false);
+    await run;
+    const second = ctxOf(fake.requests[1]!);
+    expect(second.slice(-3).map((m) => m.role)).toEqual(["tool", "user", "user"]);
+    expect(second.at(-2)!.text).toBe(forkInstruction());
+    expect(second.at(-1)!.text).toBe("[from a2] hello root");
+    const a1 = kinds(events, "a1");
+    expect(a1.indexOf("runtime_note")).toBeLessThan(a1.indexOf("message_delivered"));
+    expectRootRebuilt(events, fake);
   });
 });

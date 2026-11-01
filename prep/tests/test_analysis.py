@@ -1,3 +1,4 @@
+import os
 import json
 import sqlite3
 from pathlib import Path
@@ -156,19 +157,19 @@ def test_wrong_consensus_and_idle_time():
 
 # --- loading, gates, scores ---
 
-def matrix(tmp_path, conditions=("single", "isolated"), seeds=(1,)):
+def matrix(tmp_path, conditions=("single", "isolated"), seeds=(1,), suites=("bcp",)):
     m = {"name": "t", "orderSeed": 1, "dataDir": "data", "servers": ["http://x/v1"], "conditions": list(conditions), "seeds": list(seeds),
-         "suites": [{"suite": "bcp", "split": "scored", "tokensPerAgent": 1, "wallClockMs": 1}], "rate": {"messagesPerMinute": 1, "maxMessageChars": 1},
+         "suites": [{"suite": s, "split": "scored", "tokensPerAgent": 1, "wallClockMs": 1} for s in suites], "rate": {"messagesPerMinute": 1, "maxMessageChars": 1},
          "model": {}}
     p = tmp_path / "m.json"
     p.write_text(json.dumps(m))
     return p
 
 
-def frozen(tmp_path, ids=("bcp-1", "bcp-2")):
-    d = tmp_path / "suites" / "bcp"
+def frozen(tmp_path, ids=("bcp-1", "bcp-2"), suite="bcp"):
+    d = tmp_path / "suites" / suite
     d.mkdir(parents=True)
-    (d / "frozen.json").write_text(json.dumps({"suite": "bcp", "tasks": [{"id": i, "split": "scored", "task_sha256": "fp"} for i in ids]}))
+    (d / "frozen.json").write_text(json.dumps({"suite": suite, "tasks": [{"id": i, "split": "scored", "task_sha256": "fp"} for i in ids]}))
     return tmp_path / "suites"
 
 
@@ -215,3 +216,239 @@ def test_reproduces_the_p1b_pilot_counts():
     bcp = {c: v["first"] for c, v in data["solve"]["bcp"].items()}
     assert bcp == {"single": 1, "isolated": 5, "stigmergic": 6, "polylogue": 6, "polylogue-bare": 4}
     assert {c: v["first"] for c, v in data["solve"]["math"].items()} == {"single": 2, "isolated": 3, "stigmergic": 4, "polylogue": 4, "polylogue-bare": 4}
+
+
+# --- phase 2: forking (docs/superpowers/specs/2026-10-22-polylogue-phase2-fork-design.md §5) ---
+
+@pytest.mark.parametrize("d,verdict", [
+    ((10.0, 0.1, 20.0), "FORKING HELPS"),
+    ((10.0, 0.0, 20.0), "NO GAIN"),       # interval touches 0: not excluded
+    ((9.9, 1.0, 20.0), "NO GAIN"),        # below the 10-point bar
+    ((-12.0, -20.0, -0.1), "FORKING HURTS"),
+    ((-12.0, -20.0, 0.0), "NO GAIN"),     # interval touches 0: not entirely below it
+    ((-3.0, -6.0, -1.0), "FORKING HURTS"),  # HURTS has no size bar, only the interval
+])
+def test_fork_verdict(d, verdict):
+    e, lo, hi = d
+    assert an.fork_verdict({"effect": e, "lo": lo, "hi": hi}) == verdict
+
+
+@pytest.mark.parametrize("d,verdict", [
+    ((10.0, 0.1, 20.0), "TALK ADDS"),
+    ((10.0, 0.0, 20.0), "NO GAIN"),
+    ((9.9, 1.0, 20.0), "NO GAIN"),
+    ((-12.0, -20.0, -0.1), "NO GAIN"),    # talk hurting is not a separate verdict
+])
+def test_talk_verdict(d, verdict):
+    e, lo, hi = d
+    assert an.talk_verdict({"effect": e, "lo": lo, "hi": hi}) == verdict
+
+
+def fork_ev(t, directions=("Clue one", "Clue two", "Clue three"), fallback=False):
+    return {"kind": "fork", "t": t, "agent": "a1", "call": 3, "children": ["a2", "a3", "a4"], "directions": list(directions), "fallback": fallback}
+
+
+def read(t, agent, doc, cid, err=False):
+    return [{"kind": "tool_call", "t": t, "agent": agent, "callId": cid, "tool": "read_doc", "args": {"id": doc}},
+            {"kind": "tool_result", "t": t, "agent": agent, "callId": cid, "tool": "read_doc", "isError": err, "text": "", "ms": 1}]
+
+
+def py(t, agent, code, cid):
+    return [{"kind": "tool_call", "t": t, "agent": agent, "callId": cid, "tool": "run_python", "args": {"code": code}}]
+
+
+def test_post_fork_duplicates_count_reads_of_documents_the_root_read_before_the_fork():
+    ev = (read(1, "a1", "d1", "c1") + read(2, "a1", "d2", "c2") + read(3, "a1", "d9", "c3", err=True) + read(10, "a1", "d6", "c4")
+          + [fork_ev(10)]
+          + read(11, "a2", "d1", "c5")     # inherited from the root: a duplicate
+          + read(12, "a3", "d4", "c6") + read(13, "a4", "d4", "c7")  # two copies: a duplicate
+          + read(14, "a1", "d2", "c8")     # the root re-reading its own document: not a duplicate
+          + read(15, "a2", "d9", "c9"))    # the root's read of d9 failed: not a duplicate
+    assert an.post_fork_duplicate_reads(ev) == (2, 4)  # documents read after the fork: d1, d4, d2, d9
+    assert an.duplicate_reads(ev) == (2, 5)            # the whole run also has d6 (root, before the fork only)
+    code = (py(1, "a1", "x=1", "p1") + [fork_ev(5)] + py(6, "a1", "x=1", "p2") + py(7, "a2", "x = 1  # again", "p3")
+            + py(8, "a3", "y=2", "p4") + py(9, "a4", "y=2", "p5"))
+    assert an.post_fork_duplicate_python(code) == (2, 4)  # the root repeating itself is not; a2 repeats the root's pre-fork code, a4 repeats a3
+    assert an.duplicate_python(code) == (2, 5)
+    assert an.post_fork_duplicate_reads(read(1, "a1", "d1", "c1")) is None  # no fork: no post-fork share
+    assert an.post_fork_duplicate_python(py(1, "a1", "x=1", "p1")) is None
+
+
+def test_fork_stats_of_a_run():
+    assert an.fork_stats(read(1, "a1", "d1", "c1")) == {"forked": False, "fallback": False, "distinct": False, "max_jaccard": None}
+    assert an.fork_stats([fork_ev(5)]) == {"forked": True, "fallback": False, "distinct": True, "max_jaccard": pytest.approx(1 / 3)}  # "clue" shared, 3 words in the union
+    assert an.fork_stats([fork_ev(5, ("Clue A", " clue a", "Other"))]) == {"forked": True, "fallback": False, "distinct": False, "max_jaccard": 1.0}
+    generic = ("Take a different approach from your siblings.",) * 3
+    assert an.fork_stats([fork_ev(5, generic, fallback=True)]) == {"forked": True, "fallback": True, "distinct": False, "max_jaccard": 1.0}
+
+
+def test_max_pairwise_jaccard_matches_the_report_measure():
+    assert an.max_pairwise_jaccard(["a b c", "A, b; c!", "x y"]) == 1
+    assert an.max_pairwise_jaccard(["a b", "c d", "e f"]) == 0
+    assert an.max_pairwise_jaccard(["the cat sat", "the cat ran", "dog"]) == pytest.approx(0.5)
+    assert an.max_pairwise_jaccard(["Doc 42", "doc 42 again", "Ghent"]) == pytest.approx(2 / 3)
+    assert an.max_pairwise_jaccard(["snake_case word", "snake case word", "x"]) == 1  # an underscore splits, as in the report
+
+
+def phase2_log(tmp_path):
+    con = mklog(tmp_path / "r.sqlite")
+    runs = {
+        ("bcp", "bcp-1", "fork"): read(1, "a1", "d1", "c1") + [fork_ev(5)] + read(6, "a2", "d1", "c2") + read(7, "a3", "d2", "c3")
+                                  + claim(8, "a2", "x", True) + [finished(9, "solved", True, tokens=300)],
+        ("bcp", "bcp-2", "fork"): read(1, "a1", "d1", "c1") + [finished(9, "budget", False, tokens=400)],  # ended before the fork
+        ("bcp", "bcp-1", "fork-silent"): [fork_ev(5, ("Take a different approach from your siblings.",) * 3, fallback=True)]
+                                         + claim(8, "a2", "y", False) + [finished(9, "wrong_claim", False)],
+        ("bcp", "bcp-2", "fork-silent"): [fork_ev(5, ("Clue A", " clue a", "Other"))] + claim(8, "a3", "x", True) + [finished(9, "solved", True)],
+        ("bcp", "bcp-1", "isolated"): read(1, "a1", "d1", "c1") + read(2, "a2", "d1", "c2") + claim(8, "a1", "x", True) + [finished(9, "solved", True)],
+        ("bcp", "bcp-2", "isolated"): claim(8, "a1", "y", False) + [finished(9, "wrong_claim", False)],
+        ("math", "math-1", "fork"): py(1, "a1", "x=1", "p1") + [fork_ev(5)] + py(6, "a1", "x=1", "p2") + py(7, "a2", "x = 1", "p3")
+                                    + py(8, "a3", "print(2)", "p4") + claim(9, "a1", "1", True) + [finished(9, "solved", True)],
+        ("math", "math-2", "fork"): [fork_ev(5)] + claim(8, "a1", "2", False) + [finished(9, "wrong_claim", False)],
+        ("math", "math-1", "fork-silent"): [fork_ev(5)] + claim(8, "a1", "1", True) + [finished(9, "solved", True)],
+        ("math", "math-2", "fork-silent"): [fork_ev(5)] + claim(8, "a1", "2", False) + [finished(9, "wrong_claim", False)],
+        ("math", "math-1", "isolated"): claim(8, "a1", "2", False) + [finished(9, "wrong_claim", False)],
+        ("math", "math-2", "isolated"): claim(8, "a1", "2", False) + [finished(9, "wrong_claim", False)],
+    }
+    for (s, t, c), ev in runs.items():
+        add_run(con, f"{s}-{t}-{c}-s1", c, t, 1, ev)
+    m = matrix(tmp_path, conditions=("fork", "fork-silent", "isolated"), suites=("bcp", "math"))
+    frozen(tmp_path, ("bcp-1", "bcp-2"), "bcp")
+    return m, frozen(tmp_path, ("math-1", "math-2"), "math")
+
+
+def test_phase2_analysis_on_a_synthetic_log(tmp_path):
+    m, suites = phase2_log(tmp_path)
+    md, data = an.analyse(tmp_path / "r.sqlite", m, suites)
+    assert data["runs"] == data["expected"] == 12 and "INCOMPLETE" not in md
+    assert all(data["solve"][s][c]["runs"] == 2 for s in ("bcp", "math") for c in ("fork", "fork-silent", "isolated"))  # scored as assigned
+    v = data["verdict"]
+    assert {"F1", "F2", "F3", "holm"} <= set(v) and not {"H1", "H2", "H3", "H4", "H5"} & set(v)
+    assert list(v["holm"]) == ["F1", "F2", "F3"]
+    assert v["F1"]["verdict"] == "NO GAIN" and v["F1"]["effect"] == 0 and v["F1"]["n"] == 2  # bcp only
+    assert v["F2"]["verdict"] == "NO GAIN" and v["F2"]["n"] == 4 and v["F2"]["discordant"] == [1, 1]  # both suites
+    assert v["F3"]["testable"] and v["F3"]["effect"] == pytest.approx(-50.0)  # bcp gain 0, math gain +50
+    assert v["holm"]["F1"] == pytest.approx(an.holm([v["F1"]["mcnemar_p"], v["F2"]["mcnemar_p"], v["F3"]["p"]])[0])
+    assert v["cost"]["bcp"]["ratio"] == pytest.approx(3.5)  # fork (300 + 400) / 1 solved vs isolated (100 + 100) / 1
+    mech = data["mechanism"]
+    f, fs, iso = mech["bcp"]["fork"], mech["bcp"]["fork-silent"], mech["bcp"]["isolated"]
+    assert (f["forked"], f["ended_before_fork"], f["fallback"], f["distinct_directions"]) == ([1, 2], [1, 2], [0, 2], [1, 2])
+    assert f["max_direction_jaccard_median"] == pytest.approx(1 / 3) and fs["max_direction_jaccard_median"] == 1.0 and "max_direction_jaccard_median" not in iso
+    assert "| bcp | fork | 2 | 1/2 (50%) | 1/2 (50%) | 0/2 (0%) | 1/2 (50%) | 0.33 |" in md
+    assert "median max word-Jaccard of directions" in md
+    assert (fs["forked"], fs["fallback"], fs["distinct_directions"]) == ([2, 2], [1, 2], [0, 2])
+    assert f["duplicate_reads"]["dup"] == 1 and f["duplicate_reads"]["total"] == 3  # bcp-1: d1 {a1, a2}, d2; bcp-2: d1
+    assert (f["post_fork_duplicate_reads"]["dup"], f["post_fork_duplicate_reads"]["total"]) == (1, 2)
+    assert iso["duplicate_reads"]["share"] == pytest.approx(1.0) and "post_fork_duplicate_reads" not in iso and "forked" not in iso
+    mf = mech["math"]["fork"]
+    assert (mf["duplicate_python"]["dup"], mf["duplicate_python"]["total"]) == (1, 4)
+    assert (mf["post_fork_duplicate_python"]["dup"], mf["post_fork_duplicate_python"]["total"]) == (1, 3)
+    assert "vs_isolated" in f["duplicate_reads"]
+    for heading in ("## F1", "## F2", "## F3", "## Mechanism check", "## Cost"):
+        assert heading in md
+    assert "## H2" not in md
+
+
+def test_phase2_mechanism_without_verdicts_on_incomplete_data(tmp_path):
+    m, suites = phase2_log(tmp_path)
+    con = sqlite3.connect(tmp_path / "r.sqlite")
+    con.execute("DELETE FROM events WHERE run_id = 'math-math-2-isolated-s1'")
+    con.commit()
+    md, data = an.analyse(tmp_path / "r.sqlite", m, suites, allow_incomplete=True)
+    assert "INCOMPLETE" in md and "verdict" not in data
+    assert data["mechanism"]["bcp"]["fork"]["forked"] == [1, 2]
+
+
+def test_phase1_analysis_has_no_phase2_keys(tmp_path):
+    con = mklog(tmp_path / "r.sqlite")
+    for c in ("single", "isolated", "polylogue"):
+        for t, ok in (("bcp-1", True), ("bcp-2", c != "single")):
+            add_run(con, f"bcp-{t}-{c}-s1", c, t, 1, claim(5, "a1", "x", ok) + [finished(6, "solved" if ok else "wrong_claim", ok)])
+    md, data = an.analyse(tmp_path / "r.sqlite", matrix(tmp_path, conditions=("single", "isolated", "polylogue")), frozen(tmp_path))
+    assert data["verdict"]["H2"] in ("TALK HELPS", "ONLY PARALLELISM", "NO GAIN") and list(data["verdict"]["holm"]) == ["H2", "H1", "H3"]
+    assert not {"F1", "F2", "F3"} & set(data["verdict"]) and "mechanism" not in data
+    assert "## H2" in md and "## F1" not in md
+
+
+def test_domain_generalises_h3():
+    def run(s, t, c, first):
+        return an.Run(s, t, c, 1, f"{s}-{t}-{c}", "x", first, first, first, None, 1, 1, [], [])
+    runs = [run("bcp", f"b{i}", c, (c == "polylogue") or i % 2 == 0) for i in range(6) for c in ("polylogue", "isolated")]
+    runs += [run("math", f"m{i}", c, i % 3 == 0) for i in range(6) for c in ("polylogue", "isolated")]
+    assert an._domain(runs, "polylogue", "isolated") == an._h3(runs)
+    forked = [an.Run(r.suite, r.task, "fork" if r.condition == "polylogue" else r.condition, 1, r.run_id, "x", r.solved, r.first, r.best, None, 1, 1, [], [])
+              for r in runs]
+    assert an._domain(forked, "fork", "isolated") == an._h3(runs)
+
+
+# --- golden: the phase-1 analysis output must not change when phase 2 is touched ---
+
+GOLDEN = Path(__file__).parent / "golden"
+
+
+def phase1_golden_log(tmp_path):
+    """A small deterministic phase-1 log: five conditions, two suites, two seeds, with messages, reads, python, idle time, failed claims and an infra rerun."""
+    import random as _random
+    rng = _random.Random(11)
+    con = mklog(tmp_path / "r.sqlite")
+    sizes = {"bcp": 12, "math": 6}
+    conds = ("single", "isolated", "stigmergic", "polylogue", "polylogue-bare")
+    for suite, n in sizes.items():
+        for ti in range(1, n + 1):
+            task = f"{suite}-{ti}"
+            for seed in (1, 2):
+                for c in conds:
+                    agents = ["a1"] if c == "single" else ["a1", "a2", "a3", "a4"]
+                    ev, t = [{"kind": "agent_started", "t": 1, "agent": a} for a in agents], 3
+                    scale = 1000 * (1 + (c == "polylogue") * (ti % 3 == 0) + (ti % 4))
+                    for ai, a in enumerate(agents):
+                        for k in range(3):
+                            t += 2
+                            doc = str(100 + (ti * 3 + (ai if c == "isolated" else 0) + k) % 7)
+                            ev.append({**call(t, a, [("read_doc", {"id": doc})]), "call": k})
+                            ev.append({"kind": "tool_call", "t": t, "agent": a, "callId": f"c{ai}{k}", "tool": "read_doc", "args": {"id": doc}})
+                            ev.append({"kind": "tool_result", "t": t + 1, "agent": a, "callId": f"c{ai}{k}", "tool": "read_doc", "isError": k == 2 and ai == 1, "text": "text"})
+                        t += 1
+                        ev.append({"kind": "tool_call", "t": t, "agent": a, "callId": f"p{ai}", "tool": "run_python", "args": {"code": f"print({ti % 3})"}})
+                        ev.append({"kind": "idle", "t": t + 1, "agent": a})
+                        ev.append({"kind": "wake", "t": t + 4, "agent": a})
+                    if c in ("polylogue", "polylogue-bare", "stigmergic"):
+                        mid = f"m{ti}{seed}"
+                        ev.append(msg(t + 5, mid, "a1", ["a2", "a3"], f"Doc {100 + ti % 7} looks right; answer maybe {ti}."))
+                        ev.append(delivered(t + 6, "a2", mid))
+                        ev.append(call(t + 7, "a2", [("read_doc", {"id": str(100 + ti % 7)})]))
+                    ok = rng.random() < {"single": 0.5, "isolated": 0.85, "stigmergic": 0.6, "polylogue": 0.85, "polylogue-bare": 0.6}[c]
+                    t += 12
+                    if not ok and c != "single":
+                        ev += claim(t, "a2", str(ti), False)
+                        t += 1
+                    ev += claim(t, "a1", str(ti), ok) if not (c == "isolated" and not ok) else claim(t, "a1", "none", False)
+                    ev.append(finished(t + 1, "solved" if ok else "wrong_claim", ok, tokens=100 + 10 * ti + len(agents)))
+                    rid = f"{suite}-{task}-{c}-s{seed}"
+                    if ti == 1 and seed == 2 and c == "polylogue":
+                        add_run(con, rid, c, task, seed, [finished(5, "infra_error", False)])
+                        rid += "-r1"
+                    add_run(con, rid, c, task, seed, [{**e, "t": e["t"] * scale, **({"wallMs": e["t"] * scale} if e["kind"] == "run_finished" else {})} for e in ev])
+    return con
+
+
+def test_phase1_analysis_matches_the_committed_golden_output(tmp_path):
+    phase1_golden_log(tmp_path)
+    m = {"name": "golden", "orderSeed": 1, "dataDir": "data", "servers": ["http://x/v1"], "conditions": ["single", "isolated", "stigmergic", "polylogue", "polylogue-bare"],
+         "seeds": [1, 2], "suites": [{"suite": s, "split": "scored", "tokensPerAgent": 1, "wallClockMs": 1} for s in ("bcp", "math")],
+         "rate": {"messagesPerMinute": 1, "maxMessageChars": 1}, "model": {}}
+    mp = tmp_path / "m.json"
+    mp.write_text(json.dumps(m))
+    suites = tmp_path / "suites"
+    for s, n in (("bcp", 12), ("math", 6)):
+        d = suites / s
+        d.mkdir(parents=True)
+        (d / "frozen.json").write_text(json.dumps({"suite": s, "tasks": [{"id": f"{s}-{i}", "split": "scored", "task_sha256": "fp"} for i in range(1, n + 1)]}))
+    md, data = an.analyse(tmp_path / "r.sqlite", mp, suites)
+    js = json.dumps(data, indent=2, default=str) + "\n"
+    if os.environ.get("UPDATE_GOLDEN"):
+        GOLDEN.mkdir(exist_ok=True)
+        (GOLDEN / "phase1-analysis.md").write_text(md)
+        (GOLDEN / "phase1-analysis.json").write_text(js)
+    assert "## H2" in md and "H1" in data["verdict"] and data["verdict"]["H1"]["testable"]
+    assert md == (GOLDEN / "phase1-analysis.md").read_text()
+    assert js == (GOLDEN / "phase1-analysis.json").read_text()

@@ -1,0 +1,45 @@
+{
+  "name": "phase2",
+  "orderSeed": 1,
+  "dataDir": "data",
+  "servers": [
+    "http://zgx-40dd.local:8000/v1"
+  ],
+  "conditions": [
+    "fork",
+    "fork-silent",
+    "isolated"
+  ],
+  "seeds": [
+    1,
+    2
+  ],
+  "suites": [
+    {
+      "suite": "bcp",
+      "split": "scored",
+      "tokensPerAgent": 80000,
+      "wallClockMs": 1800000
+    },
+    {
+      "suite": "math",
+      "split": "scored",
+      "tokensPerAgent": 38000,
+      "wallClockMs": 1800000
+    }
+  ],
+  "rate": {
+    "messagesPerMinute": 10,
+    "maxMessageChars": 2000
+  },
+  "model": {
+    "id": "qwen3.8-27b",
+    "hfRepo": "unsloth/Qwen3.8-27B-NVFP4",
+    "revision": "7d6f8d4d72f56b92b3cdbf22f156b90e1bab0108",
+    "contextWindow": 262144,
+    "maxTokens": 32768,
+    "reasoningEffort": "medium",
+    "timeoutMs": 1800000,
+    "maxRetries": 3
+  }
+}

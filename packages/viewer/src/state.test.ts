@@ -73,4 +73,40 @@ describe("stateAt", () => {
     expect(s.ended?.kind).toBe("run_finished");
     expect(s.agents.every((a) => a.phase === "finished")).toBe(true);
   });
+
+  describe("forks", () => {
+    const root: Event[] = [
+      { kind: "run_started", t: 0, condition: "fork", n: 4, taskId: "toy-vault", task: "Find it.", pool: 4000, wallClockMs: 60000 },
+      { kind: "agent_started", t: 0, agent: "a1", index: 0, seed: 100, systemPrompt: "s", tools: [] },
+      ...["a2", "a3", "a4"].map((a, i) => ({ kind: "agent_started", t: 1000, agent: a, index: i + 1, seed: 101 + i, systemPrompt: "s", tools: [] }) as Event),
+      { kind: "fork", t: 1000, agent: "a1", call: 0, children: ["a2", "a3", "a4"], directions: ["x", "y", "z"], fallback: false },
+      { kind: "agent_finished", t: 5000, agent: "a1", reason: "claimed" },
+    ];
+
+    it("shows copies only after the fork", () => {
+      expect(stateAt(root, 999).agents.map((a) => a.id)).toEqual(["a1"]);
+      expect(stateAt(root, 1000).agents.map((a) => a.id)).toEqual(["a1", "a2", "a3", "a4"]);
+      expect(stateAt(root, 999).forks).toEqual([]);
+      expect(stateAt(root, 1000).forks).toEqual([{ parent: "a1", children: ["a2", "a3", "a4"], t: 1000, fallback: false }]);
+    });
+
+    it("marks the parent lane at the fork, and only the parent lane", () => {
+      const lanes = stateAt(root, 2000).lanes;
+      expect(lanes.find((l) => l.agent === "a1")!.marks).toEqual([{ kind: "fork", t: 1000 }]);
+      for (const l of lanes.filter((l) => l.agent !== "a1")) expect(l.marks).toEqual([]);
+      expect(stateAt(root, 999).lanes[0]!.marks).toEqual([]);
+    });
+
+    it("shows copies after the fork on a simulated fork run", () => {
+      const events = simulate("fork", 1);
+      const fork = events.find((e) => e.kind === "fork")!;
+      expect(stateAt(events, fork.t - 1).agents).toHaveLength(1);
+      expect(stateAt(events, fork.t).agents).toHaveLength(4);
+      expect(stateAt(events, fork.t).lanes.find((l) => l.agent === "a1")!.marks).toContainEqual({ kind: "fork", t: fork.t });
+    });
+
+    it("has no forks on a run without one", () => {
+      expect(stateAt(base, 9000).forks).toEqual([]);
+    });
+  });
 });

@@ -14,3 +14,13 @@ export function buildTools(c: Condition, agentId: string, ctx: RunContext, work:
     ...(c.messaging ? commTools(agentId, ctx) : []),
   ];
 }
+
+/**
+ * The tools of a fork run (spec §4). `root-before`: the root's work tools before the fork (the root's loop adds the fork tool when it
+ * is told to fork). `after`: every agent's tools once forked, the work tools, then claim, then messaging in `fork`. No blackboard.
+ */
+export function buildForkTools(c: Condition, agentId: string, ctx: RunContext, work: WorkTool[], phase: "root-before" | "after"): AgentTool<any>[] {
+  const tools = work.map(toAgentTool);
+  if (phase === "root-before") return tools;
+  return [...tools, claimTool(agentId, ctx), ...(c.messaging ? commTools(agentId, ctx) : [])];
+}

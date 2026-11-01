@@ -1,0 +1,39 @@
+{
+  "name": "smoke-p2",
+  "orderSeed": 1,
+  "dataDir": "data",
+  "servers": [
+    "http://zgx-40dd.local:8000/v1"
+  ],
+  "conditions": [
+    "fork"
+  ],
+  "seeds": [
+    1
+  ],
+  "suites": [
+    {
+      "suite": "bcp",
+      "split": "pilot",
+      "tokensPerAgent": 80000,
+      "wallClockMs": 1800000,
+      "tasks": [
+        "bcp-1234"
+      ]
+    }
+  ],
+  "rate": {
+    "messagesPerMinute": 10,
+    "maxMessageChars": 2000
+  },
+  "model": {
+    "id": "qwen3.8-27b",
+    "hfRepo": "unsloth/Qwen3.8-27B-NVFP4",
+    "revision": "7d6f8d4d72f56b92b3cdbf22f156b90e1bab0108",
+    "contextWindow": 262144,
+    "maxTokens": 32768,
+    "reasoningEffort": "medium",
+    "timeoutMs": 1800000,
+    "maxRetries": 3
+  }
+}

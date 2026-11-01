@@ -46,3 +46,15 @@ test("a server error shows 'Could not load run' instead of a blank page", async 
   await page.goto("/?run=does-not-exist");
   await expect(page.getByTestId("run-error")).toContainText("Could not load run does-not-exist");
 });
+
+test("a simulated fork run shows one agent before the fork, then three copies joined to the root by dashed edges", async ({ page }) => {
+  await page.goto("/?sim=fork&seed=1");
+  await expect(page.locator(".react-flow__node")).toHaveCount(4);
+  await expect(page.locator(".react-flow__edge-path[style*='stroke-dasharray']")).toHaveCount(3);
+  await expect(page.locator(".edge-label.fork")).toHaveCount(3);
+  await expect(page.locator(".mark.fork")).toHaveCount(1);
+  await page.getByTestId("scrubber").focus();
+  await page.keyboard.press("Home");
+  await expect(page.locator(".react-flow__node")).toHaveCount(1);
+  await expect(page.locator(".react-flow__edge-path[style*='stroke-dasharray']")).toHaveCount(0);
+});

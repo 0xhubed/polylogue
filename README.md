@@ -1,12 +1,14 @@
 # polylogue
 
-Does letting agents talk to each other help? A runtime for the experiment in [IDEA.md](IDEA.md): N agents (pi, on a local vLLM server) under five conditions, every event logged to SQLite, and a viewer that replays or follows a run.
+Does letting agents talk to each other help? A runtime for the experiment in [IDEA.md](IDEA.md): N agents (pi, on a local vLLM server) under the conditions of two phases, every event logged to SQLite, and a viewer that replays or follows a run.
 
 Design: [docs/superpowers/specs/2026-10-11-polylogue-runtime-design.md](docs/superpowers/specs/2026-10-11-polylogue-runtime-design.md)
 
 ## Provenance
 
 This repository is a public snapshot of the harness, taken on 2026-10-22 after the phase-1 main run. The pre-registration ([agent-engineering-experiments/preregistrations/07-multi-agent-communication.md](https://github.com/0xhubed/agent-engineering-experiments/blob/main/preregistrations/07-multi-agent-communication.md)) cites the freeze commit `de104a5` of the private working repository. That history stays private because a few early test examples used real BrowseComp-Plus answers. This snapshot replaces them with invented names, so its history starts here. The frozen tasks (`suites/*/frozen.json`) and the budgets and limits (`configs/main.json`) are byte-identical to `de104a5`. The definitions (`docs/pilot-definitions.md`) carry one dated amendment, made before any outcome was looked at and recorded in the pre-registration. The other changes after the freeze are the analysis plan and code, also written before any outcome was seen, and the test examples above. The private history is available on request.
+
+**Phase 2 (forking), added 2026-11-01.** The second commit brings the harness to private commit `a9aee1d`. The phase-2 pre-registration ([08-polylogue-forking.md](https://github.com/0xhubed/agent-engineering-experiments/blob/main/preregistrations/08-polylogue-forking.md)) cites the freeze commit `4423cd9`; the only later change is `scripts/phase2-followups/`, two exploratory scripts written after the results, on which no verdict depends. Phase-2 design: [docs/superpowers/specs/2026-10-22-polylogue-phase2-fork-design.md](docs/superpowers/specs/2026-10-22-polylogue-phase2-fork-design.md); the fork prompts as reviewed: [docs/phase2-fork-prompts-for-review.md](docs/phase2-fork-prompts-for-review.md); the run matrix: `configs/phase2.json`.
 
 Results: [agent-engineering-experiments/results/polylogue](https://github.com/0xhubed/agent-engineering-experiments/tree/main/results/polylogue).
 
@@ -28,7 +30,7 @@ npm run typecheck
 npm run polylogue -- run configs/smoke-zgx.json --db runs.sqlite
 ```
 
-The config names the condition (`single`, `isolated`, `stigmergic`, `polylogue`, `polylogue-bare`), the task, the seed, the team's token budget per agent, the wall-clock limit, rate limits and the pinned model. The run refuses to start if the server does not serve the configured model id from the configured Hugging Face repository; the revision is recorded with the run but not verified (vLLM's model list does not report it). The server needs tool calling: `--enable-auto-tool-choice --tool-call-parser=qwen3_coder` (see `serving/gb10/qwen38-27b.sh` in the agent-engineering-experiments repo).
+The config names the condition (phase 1: `single`, `isolated`, `stigmergic`, `polylogue`, `polylogue-bare`; phase 2: `fork`, `fork-silent`, `isolated`), the task, the seed, the team's token budget per agent, the wall-clock limit, rate limits and the pinned model. The run refuses to start if the server does not serve the configured model id from the configured Hugging Face repository; the revision is recorded with the run but not verified (vLLM's model list does not report it). The server needs tool calling: `--enable-auto-tool-choice --tool-call-parser=qwen3_coder` (see `serving/gb10/qwen38-27b.sh` in the agent-engineering-experiments repo).
 
 ## Task suites and batches
 

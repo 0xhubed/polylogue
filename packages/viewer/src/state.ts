@@ -3,8 +3,9 @@ import type { Event, Of } from "@polylogue/schema";
 export type Phase = "thinking" | "tool" | "working" | "idle" | "finished";
 export interface AgentView { id: string; status: string; phase: Phase; tokens: number; sent: number; finishedReason?: string }
 export interface Segment { kind: "model" | "tool" | "idle"; start: number; end: number }
-export interface Lane { agent: string; segments: Segment[]; marks: { kind: "sent" | "received" | "blackboard" | "claim"; t: number }[] }
+export interface Lane { agent: string; segments: Segment[]; marks: { kind: "sent" | "received" | "blackboard" | "claim" | "fork"; t: number }[] }
 export interface EdgeView { from: string; to: string; count: number; lastT: number; active: boolean }
+export interface ForkView { parent: string; children: string[]; t: number; fallback: boolean }
 export interface Counters { tokens: number; pool: number; wallMs: number; messages: number; messagesPerMinute: number }
 export interface ViewState {
   t: number;
@@ -16,6 +17,7 @@ export interface ViewState {
   lanes: Lane[];
   chat: Of<"message">[];
   blackboard: Of<"blackboard">[];
+  forks: ForkView[];
   counters: Counters;
 }
 
@@ -32,6 +34,7 @@ export function stateAt(events: Event[], t: number): ViewState {
   const edges = new Map<string, EdgeView>();
   const chat: Of<"message">[] = [];
   const blackboard: Of<"blackboard">[] = [];
+  const forks: ForkView[] = [];
   const openTools = new Map<string, number>();
   const openIdle = new Map<string, number>();
   let tokens = 0;
@@ -95,6 +98,10 @@ export function stateAt(events: Event[], t: number): ViewState {
         blackboard.push(e);
         lanes.get(e.agent)?.marks.push({ kind: "blackboard", t: e.t });
         break;
+      case "fork":
+        forks.push({ parent: e.agent, children: [...e.children], t: e.t, fallback: e.fallback });
+        lanes.get(e.agent)?.marks.push({ kind: "fork", t: e.t });
+        break;
       case "agent_finished": {
         closeIdle(e.agent, e.t);
         const a = agents.get(e.agent)!;
@@ -126,7 +133,7 @@ export function stateAt(events: Event[], t: number): ViewState {
     agents: [...agents.values()],
     edges: [...edges.values()],
     lanes: [...lanes.values()],
-    chat, blackboard,
+    chat, blackboard, forks,
     counters: { tokens, pool: run?.pool ?? 0, wallMs: t, messages: chat.length, messagesPerMinute },
   };
 }

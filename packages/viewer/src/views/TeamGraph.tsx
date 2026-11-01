@@ -6,7 +6,7 @@ const NODE_H = 62;
 const CURVE = 30;
 
 type AgentNode = Node<{ agent: AgentView }, "agent">;
-type FlowEdge = Edge<{ text: string }, "directed">;
+type FlowEdge = Edge<{ text: string; fork?: boolean }, "directed">;
 
 const hidden = { top: "50%", left: "50%", transform: "none", width: 1, height: 1, minWidth: 0, minHeight: 0, opacity: 0, border: 0 } as const;
 
@@ -38,15 +38,17 @@ function DirectedEdge({ id, sourceX, sourceY, targetX, targetY, markerEnd, style
   const ty = targetY - uy * reach;
   const px = -uy;
   const py = ux;
-  const cx = (sx + tx) / 2 + px * CURVE * 2;
-  const cy = (sy + ty) / 2 + py * CURVE * 2;
+  // A fork edge runs straight, so it does not lie on top of a message edge between the same two agents.
+  const bend = data?.fork ? 0 : CURVE;
+  const cx = (sx + tx) / 2 + px * bend * 2;
+  const cy = (sy + ty) / 2 + py * bend * 2;
   // The curve's midpoint is halfway between the chord and the control point.
-  const lx = (sx + tx) / 2 + px * CURVE;
-  const ly = (sy + ty) / 2 + py * CURVE;
+  const lx = (sx + tx) / 2 + px * bend;
+  const ly = (sy + ty) / 2 + py * bend;
   return (
     <>
       <BaseEdge id={id} path={`M ${sx} ${sy} Q ${cx} ${cy} ${tx} ${ty}`} markerEnd={markerEnd} style={style} />
-      <text x={lx} y={ly} className="edge-label" textAnchor="middle" dominantBaseline="middle">{data?.text}</text>
+      <text x={lx} y={ly} className={data?.fork ? "edge-label fork" : "edge-label"} textAnchor="middle" dominantBaseline="middle">{data?.text}</text>
     </>
   );
 }
@@ -79,11 +81,22 @@ export function TeamGraph({ s }: { s: ViewState }) {
       markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18, color: e.active ? "#1f7a6b" : "#7a8590" },
       style: { strokeWidth: Math.min(5, 1 + e.count / 2), opacity: e.active ? 1 : 0.7, stroke: e.active ? "#1f7a6b" : "#7a8590" },
     }));
+  const present = new Set(s.agents.map((a) => a.id));
+  const forkEdges: FlowEdge[] = s.forks.flatMap((f) =>
+    f.children.filter((c) => present.has(f.parent) && present.has(c)).map((c): FlowEdge => ({
+      id: `fork-${f.parent}-${c}`,
+      type: "directed",
+      source: f.parent,
+      target: c,
+      data: { text: "fork", fork: true },
+      markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18, color: "#c2410c" },
+      style: { strokeWidth: 2, strokeDasharray: "6 5", stroke: "#c2410c" },
+    })));
   return (
     <section className="panel graph" data-testid="team-graph" aria-label="Team graph">
       <h2>Team</h2>
       <div className="graph-canvas">
-        <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} fitView nodesConnectable={false} proOptions={{ hideAttribution: true }} />
+        <ReactFlow nodes={nodes} edges={[...edges, ...forkEdges]} nodeTypes={nodeTypes} edgeTypes={edgeTypes} fitView nodesConnectable={false} proOptions={{ hideAttribution: true }} />
       </div>
     </section>
   );

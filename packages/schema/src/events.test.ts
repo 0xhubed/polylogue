@@ -32,6 +32,29 @@ describe("Event schema", () => {
     expect(() => Event.parse({ ...base, taskFingerprint: 12 })).toThrow();
   });
 
+  it("parses a fork event", () => {
+    const ok = { kind: "fork", t: 5000, agent: "a1", call: 7, children: ["a2", "a3", "a4"], directions: ["Check clue 1.", "Check clue 2.", "Check clue 3."], fallback: false };
+    expect(Event.parse(ok)).toEqual(ok);
+    expect(() => Event.parse({ ...ok, fallback: true })).not.toThrow();
+    expect(() => Event.parse({ ...ok, children: ["a2", "a3"] })).toThrow();
+    expect(() => Event.parse({ ...ok, directions: ["x", "y"] })).toThrow();
+    expect(() => Event.parse({ ...ok, children: ["a2", "a3", "bob"] })).toThrow();
+    expect(() => Event.parse({ ...ok, fallback: undefined })).toThrow();
+  });
+
+  it("parses a runtime_note event", () => {
+    const ok = { kind: "runtime_note", t: 6000, agent: "a1", text: "Fork now." };
+    expect(Event.parse(ok)).toEqual(ok);
+    expect(() => Event.parse({ ...ok, agent: "bob" })).toThrow();
+    expect(() => Event.parse({ kind: "runtime_note", t: 6000, agent: "a1" })).toThrow();
+  });
+
+  it("accepts the fork and fork-silent condition names", () => {
+    const base = { kind: "run_started", t: 0, n: 4, taskId: "bcp-1", task: "Q?", pool: 1000, wallClockMs: 1000 };
+    for (const condition of ["fork", "fork-silent"]) expect(Event.parse({ ...base, condition })).toMatchObject({ condition });
+    expect(() => Event.parse({ ...base, condition: "fork-loud" })).toThrow();
+  });
+
   it("rejects unknown kinds, bad agent ids and unknown end reasons", () => {
     expect(() => Event.parse({ kind: "nope", t: 0 })).toThrow();
     expect(() => Event.parse({ kind: "idle", t: 0, agent: "bob" })).toThrow();

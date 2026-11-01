@@ -1,0 +1,481 @@
+{
+  "matrix": "golden",
+  "runs": 180,
+  "expected": 180,
+  "solve": {
+    "bcp": {
+      "single": {
+        "runs": 24,
+        "first": 17,
+        "solved": 17
+      },
+      "isolated": {
+        "runs": 24,
+        "first": 20,
+        "solved": 20
+      },
+      "stigmergic": {
+        "runs": 24,
+        "first": 13,
+        "solved": 13
+      },
+      "polylogue": {
+        "runs": 24,
+        "first": 20,
+        "solved": 20
+      },
+      "polylogue-bare": {
+        "runs": 24,
+        "first": 13,
+        "solved": 13
+      }
+    },
+    "math": {
+      "single": {
+        "runs": 12,
+        "first": 6,
+        "solved": 6
+      },
+      "isolated": {
+        "runs": 12,
+        "first": 9,
+        "solved": 9
+      },
+      "stigmergic": {
+        "runs": 12,
+        "first": 8,
+        "solved": 8
+      },
+      "polylogue": {
+        "runs": 12,
+        "first": 8,
+        "solved": 8
+      },
+      "polylogue-bare": {
+        "runs": 12,
+        "first": 6,
+        "solved": 6
+      }
+    }
+  },
+  "describe": {
+    "bcp": {
+      "isolated": {
+        "runs": 24,
+        "messages_per_agent": 0.0,
+        "runs_with_substantive_message": 0,
+        "agents_with_substantive_message": 0,
+        "agents": 96,
+        "median_ms_to_first_substantive": null,
+        "median_idle_ms_per_agent": 7500.0,
+        "duplicate_reads": [
+          96,
+          144
+        ],
+        "duplicate_python": [
+          72,
+          96
+        ],
+        "wrong_consensus": 0,
+        "claims_per_run": 1.1666666666666667,
+        "false_claims": [
+          8,
+          28
+        ],
+        "end_reasons": {
+          "solved": 20,
+          "wrong_claim": 4
+        },
+        "median_tokens": 169.0,
+        "median_wall_s": 111.0
+      },
+      "polylogue": {
+        "runs": 24,
+        "messages_per_agent": 0.25,
+        "runs_with_substantive_message": 24,
+        "agents_with_substantive_message": 24,
+        "agents": 96,
+        "median_ms_to_first_substantive": 108000.0,
+        "median_idle_ms_per_agent": 9000.0,
+        "duplicate_reads": [
+          72,
+          72
+        ],
+        "duplicate_python": [
+          72,
+          96
+        ],
+        "wrong_consensus": 4,
+        "claims_per_run": 1.1666666666666667,
+        "false_claims": [
+          8,
+          28
+        ],
+        "end_reasons": {
+          "solved": 20,
+          "wrong_claim": 4
+        },
+        "median_tokens": 169.0,
+        "median_wall_s": 132.0
+      },
+      "polylogue-bare": {
+        "runs": 24,
+        "messages_per_agent": 0.25,
+        "runs_with_substantive_message": 24,
+        "agents_with_substantive_message": 24,
+        "agents": 96,
+        "median_ms_to_first_substantive": 90000.0,
+        "median_idle_ms_per_agent": 7500.0,
+        "duplicate_reads": [
+          72,
+          72
+        ],
+        "duplicate_python": [
+          72,
+          96
+        ],
+        "wrong_consensus": 11,
+        "claims_per_run": 1.4583333333333333,
+        "false_claims": [
+          22,
+          35
+        ],
+        "end_reasons": {
+          "solved": 13,
+          "wrong_claim": 11
+        },
+        "median_tokens": 169.0,
+        "median_wall_s": 111.0
+      },
+      "single": {
+        "runs": 24,
+        "messages_per_agent": 0.0,
+        "runs_with_substantive_message": 0,
+        "agents_with_substantive_message": 0,
+        "agents": 24,
+        "median_ms_to_first_substantive": null,
+        "median_idle_ms_per_agent": 7500.0,
+        "duplicate_reads": [
+          0,
+          72
+        ],
+        "duplicate_python": [
+          0,
+          24
+        ],
+        "wrong_consensus": 0,
+        "claims_per_run": 1.0,
+        "false_claims": [
+          7,
+          24
+        ],
+        "end_reasons": {
+          "solved": 17,
+          "wrong_claim": 7
+        },
+        "median_tokens": 166.0,
+        "median_wall_s": 57.5
+      },
+      "stigmergic": {
+        "runs": 24,
+        "messages_per_agent": 0.25,
+        "runs_with_substantive_message": 24,
+        "agents_with_substantive_message": 24,
+        "agents": 96,
+        "median_ms_to_first_substantive": 90000.0,
+        "median_idle_ms_per_agent": 7500.0,
+        "duplicate_reads": [
+          72,
+          72
+        ],
+        "duplicate_python": [
+          72,
+          96
+        ],
+        "wrong_consensus": 11,
+        "claims_per_run": 1.4583333333333333,
+        "false_claims": [
+          22,
+          35
+        ],
+        "end_reasons": {
+          "wrong_claim": 11,
+          "solved": 13
+        },
+        "median_tokens": 169.0,
+        "median_wall_s": 111.0
+      }
+    },
+    "math": {
+      "isolated": {
+        "runs": 12,
+        "messages_per_agent": 0.0,
+        "runs_with_substantive_message": 0,
+        "agents_with_substantive_message": 0,
+        "agents": 48,
+        "median_ms_to_first_substantive": null,
+        "median_idle_ms_per_agent": 7500.0,
+        "duplicate_reads": [
+          48,
+          72
+        ],
+        "duplicate_python": [
+          36,
+          48
+        ],
+        "wrong_consensus": 0,
+        "claims_per_run": 1.25,
+        "false_claims": [
+          6,
+          15
+        ],
+        "end_reasons": {
+          "wrong_claim": 3,
+          "solved": 9
+        },
+        "median_tokens": 139.0,
+        "median_wall_s": 111.0
+      },
+      "polylogue": {
+        "runs": 12,
+        "messages_per_agent": 0.25,
+        "runs_with_substantive_message": 12,
+        "agents_with_substantive_message": 12,
+        "agents": 48,
+        "median_ms_to_first_substantive": 90000.0,
+        "median_idle_ms_per_agent": 7500.0,
+        "duplicate_reads": [
+          36,
+          36
+        ],
+        "duplicate_python": [
+          36,
+          48
+        ],
+        "wrong_consensus": 4,
+        "claims_per_run": 1.3333333333333333,
+        "false_claims": [
+          8,
+          16
+        ],
+        "end_reasons": {
+          "solved": 8,
+          "wrong_claim": 4
+        },
+        "median_tokens": 139.0,
+        "median_wall_s": 111.0
+      },
+      "polylogue-bare": {
+        "runs": 12,
+        "messages_per_agent": 0.25,
+        "runs_with_substantive_message": 12,
+        "agents_with_substantive_message": 12,
+        "agents": 48,
+        "median_ms_to_first_substantive": 90000.0,
+        "median_idle_ms_per_agent": 7500.0,
+        "duplicate_reads": [
+          36,
+          36
+        ],
+        "duplicate_python": [
+          36,
+          48
+        ],
+        "wrong_consensus": 6,
+        "claims_per_run": 1.5,
+        "false_claims": [
+          12,
+          18
+        ],
+        "end_reasons": {
+          "solved": 6,
+          "wrong_claim": 6
+        },
+        "median_tokens": 139.0,
+        "median_wall_s": 111.0
+      },
+      "single": {
+        "runs": 12,
+        "messages_per_agent": 0.0,
+        "runs_with_substantive_message": 0,
+        "agents_with_substantive_message": 0,
+        "agents": 12,
+        "median_ms_to_first_substantive": null,
+        "median_idle_ms_per_agent": 7500.0,
+        "duplicate_reads": [
+          0,
+          36
+        ],
+        "duplicate_python": [
+          0,
+          12
+        ],
+        "wrong_consensus": 0,
+        "claims_per_run": 1.0,
+        "false_claims": [
+          6,
+          12
+        ],
+        "end_reasons": {
+          "solved": 6,
+          "wrong_claim": 6
+        },
+        "median_tokens": 136.0,
+        "median_wall_s": 57.5
+      },
+      "stigmergic": {
+        "runs": 12,
+        "messages_per_agent": 0.25,
+        "runs_with_substantive_message": 12,
+        "agents_with_substantive_message": 12,
+        "agents": 48,
+        "median_ms_to_first_substantive": 90000.0,
+        "median_idle_ms_per_agent": 7500.0,
+        "duplicate_reads": [
+          36,
+          36
+        ],
+        "duplicate_python": [
+          36,
+          48
+        ],
+        "wrong_consensus": 4,
+        "claims_per_run": 1.3333333333333333,
+        "false_claims": [
+          8,
+          16
+        ],
+        "end_reasons": {
+          "solved": 8,
+          "wrong_claim": 4
+        },
+        "median_tokens": 139.0,
+        "median_wall_s": 111.0
+      }
+    }
+  },
+  "verdict": {
+    "H2": "NO GAIN",
+    "h2": {
+      "effect": 0.0,
+      "lo": -16.666666666666668,
+      "hi": 16.666666666666668,
+      "n": 24,
+      "mcnemar_p": 1.0,
+      "discordant": [
+        4,
+        4
+      ]
+    },
+    "only_parallelism_check": {
+      "effect": 12.5,
+      "lo": -4.166666666666667,
+      "hi": 33.333333333333336,
+      "n": 24,
+      "mcnemar_p": 0.5078125,
+      "discordant": [
+        6,
+        3
+      ]
+    },
+    "holm": {
+      "H2": 1.0,
+      "H1": 1.0,
+      "H3": 1.0
+    },
+    "H1": {
+      "testable": true,
+      "pairs": 16,
+      "ratio": 1.0,
+      "lo": 1.0,
+      "hi": 1.3333333333333333,
+      "p": 0.9794563877360893,
+      "holds": false
+    },
+    "H3": {
+      "testable": true,
+      "effect": 8.333333333333334,
+      "lo_one_sided": -16.666666666666668,
+      "p": 0.3532,
+      "holds": false
+    },
+    "H4": {
+      "share_agents_substantive": 0.25,
+      "diff_vs_isolated": {
+        "effect": -27.77777777777778,
+        "lo": -44.44444444444444,
+        "hi": -11.11111111111111,
+        "n": 36,
+        "mcnemar_p": 0.021270751953125,
+        "discordant": [
+          3,
+          13
+        ]
+      },
+      "holds": false
+    },
+    "H5": {
+      "bcp": {
+        "ratio": 1.0,
+        "lo": 0.8181818181818182,
+        "hi": 1.2352941176470589,
+        "meets_1_5": false
+      },
+      "math": {
+        "ratio": 1.125,
+        "lo": 0.7777777777777777,
+        "hi": 1.6666666666666665,
+        "meets_1_5": false
+      }
+    },
+    "secondary": {
+      "stigmergic - polylogue": {
+        "effect": -19.444444444444443,
+        "lo": -36.111111111111114,
+        "hi": -2.7777777777777777,
+        "n": 36,
+        "mcnemar_p": 0.143463134765625,
+        "discordant": [
+          5,
+          12
+        ]
+      },
+      "polylogue - polylogue-bare": {
+        "effect": 25.0,
+        "lo": 8.333333333333334,
+        "hi": 41.666666666666664,
+        "n": 36,
+        "mcnemar_p": 0.049041748046875,
+        "discordant": [
+          13,
+          4
+        ]
+      },
+      "isolated - single": {
+        "effect": 16.666666666666668,
+        "lo": -2.7777777777777777,
+        "hi": 36.111111111111114,
+        "n": 36,
+        "mcnemar_p": 0.210113525390625,
+        "discordant": [
+          11,
+          5
+        ]
+      },
+      "isolated best-of-N - first claim": {
+        "effect": 0.0
+      }
+    },
+    "manipulation_check": {
+      "runs_with_substantive_message": 24,
+      "runs": 24,
+      "messages_per_agent": {
+        "isolated": 0.0,
+        "polylogue": 0.25,
+        "polylogue-bare": 0.25,
+        "single": 0.0,
+        "stigmergic": 0.25
+      }
+    }
+  }
+}
